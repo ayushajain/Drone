@@ -13,8 +13,11 @@ ap.add_argument("-v", "--video", required = False, default = False, help = "Pass
 
 args = vars(ap.parse_args())
 
+body_cascade = cv2.CascadeClassifier('/usr/local/Cellar/opencv3/3.1.0_1/share/OpenCV/haarcascades/haarcascade_fullbody.xml')
+
 
 def performFilters(frame):
+
     # kernel for high pass filters
     kernel = np.ones((2,2),np.uint8)
 
@@ -24,37 +27,33 @@ def performFilters(frame):
 
     # Threshold Filters
     (T, binaryThresh) = cv2.threshold(blurred, float(args["threshold"]), 255, cv2.THRESH_BINARY)
-    # (T, toZeroInvThresh) = cv2.threshold(blurred, float(args["threshold"]), 255, cv2.THRESH_TOZERO_INV)
+    (T, toZeroInvThresh) = cv2.threshold(blurred, float(args["threshold"]), 255, cv2.THRESH_TOZERO_INV)
 
-    mask = cv2.dilate(binaryThresh, None, iterations=2)
-    mask = cv2.erode(mask, None, iterations=2)
+    mask = cv2.dilate(binaryThresh, None, iterations=3)
 
-    # Laplacian Filter
-    # laplacian = cv2.Laplacian(blurred, cv2.CV_64F)
+    body = body_cascade.detectMultiScale(gray, 1.3, 5)
+    for (x,y,w,h) in body:
+         cv2.rectangle(gray,(x,y),(x+w,y+h),(255,0,0),2)
 
-    # High Pass Opening Filter
-    # opening = cv2.morphologyEx(binaryThresh, cv2.MORPH_OPEN, kernel)
 
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for c in cnts[0]:
         peri = cv2.arcLength(c, True);
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        if len(c) < 40 and len(c) > 5:
-            cv2.drawContours(frame, [c], -1, (0,255,0), 2)
-
-
+        if len(c) < 50 and len(c) > 5:
+            cv2.drawContours(gray, [c], -1, (0,255,0), 2)
 
     filtered = {}
     filtered['binaryThresh'] = mask
-    filtered['toZeroInvThresh'] = frame
+    filtered['toZeroInvThresh'] = gray
 
     return filtered
 
 
-if args["image"] is "foo" or bool(args["video"]):
+if args["image"] is "foo" or args["video"]:
     cap = None
 
-    if bool(args["video"]):
+    if args["video"]:
         cap = cv2.VideoCapture(args["image"])
     else:
         cap = cv2.VideoCapture(0)
