@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.example.ayush.droneflashing.MainActivity">
+
+    <TableLayout
+        android:id="@+id/MainLayout"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:orientation="vertical" >
+
+        <TableRow
+            android:id="@+id/InputRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:weightSum="30" >
+            <EditText
+                android:id="@+id/Field1"
+                style="@style/InputField"
+                 />
+            <EditText
+                android:id="@+id/Field2"
+                style="@style/InputField"
+                 />
+            <EditText
+                android:id="@+id/Field3"
+                style="@style/InputField"
+                 />
+            <EditText
+                android:id="@+id/Field4"
+                style="@style/InputField"
+                 />
+            <EditText
+                android:id="@+id/Field5"
+                style="@style/InputField"
+                />
+            <EditText
+                android:id="@+id/Field6"
+                style="@style/InputField"
+                />
+            <EditText
+                android:id="@+id/Field7"
+                style="@style/InputField"
+                />
+            <EditText
+                android:id="@+id/Field8"
+                style="@style/InputField"
+                />
+
+        </TableRow>
+        <TableRow
+            android:id="@+id/ButtonRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:weightSum="10">
+            <Button
+                android:id="@+id/ButtonStart"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:text="Start"
+                />
+            <Button
+                android:id="@+id/ButtonReset"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:text="Reset"
+                />
+        </TableRow>
+
+    </TableLayout>
+
+</RelativeLayout>
