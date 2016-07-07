@@ -13,41 +13,66 @@ ap.add_argument("-v", "--video", required = False, default = False, help = "Pass
 
 args = vars(ap.parse_args())
 
-body_cascade = cv2.CascadeClassifier('/usr/local/Cellar/opencv3/3.1.0_1/share/OpenCV/haarcascades/haarcascade_fullbody.xml')
+kernel = np.ones((5,5),np.float32)/25
+
+def getAverageBrightness(frame):
+    val = cv2.mean(frame)
+    return val
+
 
 def performFilters(frame):
 
-    # kernel for high pass filters
-    kernel = np.ones((2,2),np.uint8)
+    frame = cv2.resize(frame, (0,0), fx=float(args["scale"]), fy=float(args["scale"]))
 
-    # Grayscale and Blurring
+    # Grayscale and Blurring to eliminate
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray,(int(args["blur"]),int(args["blur"])),0)
 
     # Threshold Filters
-    (T, binaryThresh) = cv2.threshold(blurred, float(args["threshold"]), 255, cv2.THRESH_BINARY)
-    (T, toZeroInvThresh) = cv2.threshold(blurred, float(args["threshold"]), 255, cv2.THRESH_TOZERO_INV)
+    # avgBrightness = getAverageBrightness(blurred)
+    (T, mask) = cv2.threshold(blurred, float(args["threshold"]), 255, cv2.THRESH_BINARY)
 
-    mask = cv2.dilate(binaryThresh, None, iterations=5)
+    mask = cv2.dilate(mask,kernel,iterations = 1)
 
-    body = body_cascade.detectMultiScale(gray, 1.3, 5)
-    for (x,y,w,h) in body:
-         cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
 
+    ######### MEMORY INTENSIVE ALGORITHMS ########
 
     cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for c in cnts[0]:
         peri = cv2.arcLength(c, True);
-        approx = cv2.approxPolyDP(c, 0.04 * peri, True)
-        if len(c) < 50 and len(c) > 5:
+        approx = cv2.approxPolyDP(c, 0.01 * peri, True)
+        M = cv2.moments(c)
+        cX = 0
+        cY = 0
+        try:
+            cX = int((M["m10"] / M["m00"]))
+            cY = int((M["m01"] / M["m00"]))
+
+            pixel = frame[cX, cY]
+            print pixel
+        except:
+            None
+
+
+        if len(approx) is 4:
             cv2.drawContours(frame, [c], -1, (0,255,0), 2)
+            cv2.putText(frame, str(len(approx)), (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+
+    ###############################################
 
     filtered = {}
     filtered['binaryThresh'] = mask
-    filtered['toZeroInvThresh'] = frame
+    filtered['origFrame'] = frame
 
     return filtered
 
+
+
+
+
+
+# frame display/saving
 
 if args["image"] is "foo" or args["video"]:
     cap = None
@@ -56,38 +81,38 @@ if args["image"] is "foo" or args["video"]:
         cap = cv2.VideoCapture(args["image"])
     else:
         cap = cv2.VideoCapture(0)
-    
-    w=int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH ))
-    h=int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT ))
+
+    # frame size
+    # w=int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH ))
+    # h=int(cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT ))
+
     # video recorder
-    fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v')  # cv2.VideoWriter_fourcc() does not exist
-    out = cv2.VideoWriter("output.mp4", fourcc, 25, (w, h))
+    # fourcc = cv2.cv.CV_FOURCC('m', 'p', '4', 'v')
+    # out = cv2.VideoWriter("output.mp4", fourcc, 25, (w, h))
 
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
 
         result = performFilters(frame)
-        # cv2.imshow('BINARY_FILTER', result['binaryThresh'])
-        # cv2.imshow('TOZERO_INVERSE_FILTER', result['toZeroInvThresh'])
-        
-        out.write(result['toZeroInvThresh'])
+        cv2.imshow('BINARY_FILTER', result['binaryThresh'])
+        cv2.imshow('ORIGINAL_FRAME', result['origFrame'])
+
+        # out.write(result['toZeroInvThresh'])
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # When everything done, release the capture
-    cap.release()
-    cv2.destroyAllWindows()
 else:
     result = performFilters(cv2.resize(cv2.imread(args["image"]), (0,0), fx=float(args["scale"]), fy=float(args["scale"])))
 
     cv2.imshow('BINARY_FILTER', result['binaryThresh'])
-    cv2.imshow('TOZERO_INVERSE_FILTER', result['toZeroInvThresh'])
+    cv2.imshow('ORIGINAL_FRAME', result['origFrame'])
 
     cv2.waitKey(0)
 
 
+
 cap.release()
-out.release()
+# out.release()
 cv2.destroyAllWindows()

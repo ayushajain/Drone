@@ -4,8 +4,10 @@ import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.*;
 
@@ -17,7 +19,7 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity {
 
     //rate of each bit in milliseconds
-    private final int TIC_RATE = 500;
+    private final int TIC_RATE = 100;
 
     //list containing all the fields
     ArrayList<EditText> fields = new ArrayList<EditText>();
@@ -33,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -48,6 +51,16 @@ public class MainActivity extends AppCompatActivity {
         fields.add((EditText)findViewById(R.id.Field6));
         fields.add((EditText)findViewById(R.id.Field7));
         fields.add((EditText)findViewById(R.id.Field8));
+
+        //temporary hardcoding for pattern
+        fields.get(0).setText("1");
+        fields.get(1).setText("0");
+        fields.get(2).setText("1");
+        fields.get(3).setText("0");
+        fields.get(4).setText("1");
+        fields.get(5).setText("1");
+        fields.get(6).setText("1");
+        fields.get(7).setText("0");
 
         //setting up Camera
         manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -83,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
 
+
                     //reset timer
                     if(timer != null) {
                         timer.cancel();
@@ -93,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
                     timer.scheduleAtFixedRate(new TimerTask() {
 
                         int count = 0;
+
 
                         @Override
                         public void run() {
