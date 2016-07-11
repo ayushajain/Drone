@@ -1,13 +1,13 @@
 import argparse
-from collections import Counter
-from flash import Flash
 import cv2
 import numpy as np
+from flash import Flash
 
 ap = argparse.ArgumentParser()
 
 # generate arguments
-ap.add_argument("-i", "--video", required=False, default="images/200fps.MP4", help="Path to the video to be processed")
+ap.add_argument("-i", "--video", required=False, default="images/3Flashes.MP4",
+                help="Path to the video to be processed")
 ap.add_argument("-t", "--threshold", required=False, default=230, help="Threshold limit")
 ap.add_argument("-s", "--scale", required=False, default=0.5, help="Image scale size")
 ap.add_argument("-b", "--blur", required=False, default=15, help="Blur amount")
@@ -19,7 +19,7 @@ args = vars(ap.parse_args())
 BIT_PATTERN_LENGTH = 8
 
 # frame interval
-FRAME_INTERVAL = 10
+FRAME_INTERVAL = 5
 
 # kernel for blob dilation
 # changing the dimensions affects size of dilation.
@@ -28,14 +28,17 @@ kernel = np.ones((5, 5), np.float32) / 25
 # frame interval
 frame_wait_time = FRAME_INTERVAL
 
-# raw bits captured during processing
-raw_bit_rate = []
-
 # current pattern being processed
 current_pattern = []
 
 # single flash
-flash = Flash()
+flashes = []
+
+# TEST: flash identity
+flash_identity = 0
+
+# TEST: get pattern from user
+PATTERN = "01010111"
 
 
 def main():
@@ -66,7 +69,9 @@ def main():
 
 
 def perform_filters(image):
+    global flash_identity
     global frame_wait_time
+    global PATTERN
 
     # resize frame to reduce processing times
     image = cv2.resize(image, (0, 0), fx=float(args["scale"]), fy=float(args["scale"]))
@@ -81,7 +86,7 @@ def perform_filters(image):
 
     # Find contours on thresholded frame
     contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    pixel = 0
+    pixels = []
 
     # iterate through all the contour shapes found
     for c in contours[0]:
@@ -95,35 +100,44 @@ def perform_filters(image):
             center_x = int((moments["m10"] / moments["m00"]))
             center_y = int((moments["m01"] / moments["m00"]))
 
-            pixel = mask[center_y, center_x]
+            pixels.append((center_x, center_y))
 
         except ZeroDivisionError:
             pass
 
         # draw contours to frame with a circle at the center
-        cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
+        # cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
         cv2.circle(image, (center_x, center_y), 4, (0, 0, 255), -1)
         # cv2.putText(frame, str(len(approx)), (center_x, center_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-    # pattern recognition
-    raw_bit_rate.append(pixel)
+    # identify and flashes
+    for flash in flashes:
+        cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+        if flash.equals_pattern(PATTERN):
+            cv2.rectangle(image, (flash.x - 15, flash.y - 15), (flash.x + 15, flash.y + 15), (0, 255, 0), 2)
 
-    # add bit to pattern every 10 frames
+    # pattern recognition
+    # add bit to pattern every n frames
     if frame_wait_time > 1:
         frame_wait_time -= 1
     else:
-        current_pattern.append(pixel)
+        for pixel in pixels:
+            flash_exists = False
+            for flash in flashes:
+                # TODO: change distance to pixel based on drone altitude and implement object tracking
+                if flash.distance_to(pixel) < 10:
+                    flash_exists = True
+
+            if not flash_exists:
+                flashes.append(Flash(pixel, str(flash_identity)))
+                flash_identity += 1
+
         frame_wait_time = FRAME_INTERVAL
+        for flash in flashes:
+            flash.push_raw_bits(mask[flash.y][flash.x])
+            print flash.identity + ": " + flash.pattern
 
-    # add current pattern once bit length is reached
-    if len(current_pattern) is BIT_PATTERN_LENGTH:
-        flash.add_pattern(current_pattern)
-        del current_pattern[:]
-
-    # TEST: printing out data
-    print current_pattern
-    print flash.patterns
-    print "Most Commonly Occurring Flash: " + flash.get_pattern()
+        print ""
 
     # return processed frames
     return {'binaryThresh': mask, 'origFrame': image}

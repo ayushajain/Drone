@@ -1,1 +1,4 @@
 images
+.pyc
+.idea
+.DS_STORE
