@@ -10,7 +10,10 @@ class Flash:
         self.cached_pattern = ("no pattern identified", 0)
 
         # raw bit rate
-        self.raw_bit_rate = []
+        self.raw_bits = []
+
+        # set last_updated to an obscure value
+        self.last_update = -1
 
         # initialize current flash location and identity
         self.x = location[0]
@@ -18,25 +21,23 @@ class Flash:
         self.identity = identity
 
     def __str__(self):
-        return str(self.pattern)
+        return str(self.identity) + ": location(" + str(self.x) + ", " + str(self.y) + ") pattern(" + self.pattern() + ")"
 
     def __repr__(self):
-        return str(self.pattern)
+        return self.__str__()
 
     def push_raw_bits(self, bit):
-        self.raw_bit_rate.append(bit)
+        self.raw_bits.append(bit)
 
-    @property
     def pattern(self):
-        if len(self.raw_bit_rate) - self.cached_pattern[1] > 7:
+        if len(self.raw_bits) - self.cached_pattern[1] > 7:
 
-            chunks = [pattern_to_binary(self.raw_bit_rate[x:x + 8]) for x in xrange(0, len(self.raw_bit_rate), 8)]
-            if len(chunks[-1]) != 8:
-                del chunks[-1]
+            # split the raw bits into sub-lists of 8 bits each
+            chunks = [pattern_to_binary(self.raw_bits[x:x + 8]) for x in xrange(0, len(self.raw_bits), 8) if len(pattern_to_binary(self.raw_bits[x:x + 8])) == 8]
             data = Counter(tuple(chunks))
 
             if len(data) > 0:
-                self.cached_pattern = (str(data.most_common()[0][0]), len(self.raw_bit_rate))
+                self.cached_pattern = (str(data.most_common()[0][0]), len(self.raw_bits))
                 return str(data.most_common()[0][0])
             return "no pattern identified"
         else:
@@ -46,14 +47,19 @@ class Flash:
         return math.sqrt((location[0] - self.x) ** 2 + (location[1] - self.y) ** 2)
 
     def equals_pattern(self, pattern):
-        if self.pattern != "no pattern identified":
+        if self.pattern() != "no pattern identified":
+            print self.pattern()
             input_list = list(pattern)
-            pattern_list = deque(self.pattern)
+            pattern_list = deque(self.pattern())
             for i in range(0, 8):
                 pattern_list.rotate(1)
                 if list(pattern_list) == input_list:
                     return True
         return False
+
+    def update_location(self, location):
+        self.x = location[0]
+        self.y = location[1]
 
 
 def pattern_to_binary(pattern):
