@@ -19,14 +19,21 @@ class Flash:
         self.x = location[0]
         self.y = location[1]
         self.identity = identity
+        self.last_frame_count = 0
 
     def __str__(self):
-        return str(self.identity) + ": location(" + str(self.x) + ", " + str(self.y) + ") pattern(" + self.pattern() + ")"
+        return str(self.identity) + ": location(" + str(self.x) + ", " + str(self.y) + ") pattern(" + self.pattern() + ") rawbitrate" + str(self.raw_bits)
 
     def __repr__(self):
         return self.__str__()
 
     def push_raw_bits(self, bit):
+        if len(self.raw_bits) > 0:
+            bits_missed = (self.last_update - self.last_frame_count)/5.0
+            last_bit = self.raw_bits[-1]
+            for count in range(int(round(bits_missed)) - 1):
+                self.raw_bits.append(last_bit)
+        self.last_frame_count = self.last_update
         self.raw_bits.append(bit)
 
     def pattern(self):
@@ -48,7 +55,7 @@ class Flash:
 
     def equals_pattern(self, pattern):
         if self.pattern() != "no pattern identified":
-            print self.pattern()
+            # print self.pattern()
             input_list = list(pattern)
             pattern_list = deque(self.pattern())
             for i in range(0, 8):
@@ -65,5 +72,5 @@ class Flash:
 def pattern_to_binary(pattern):
     string_pattern = ""
     for i in pattern:
-        string_pattern += ("1" if i != 0 and i != "0" else "0")
+        string_pattern += ("1" if i > 100 else "0")
     return string_pattern
