@@ -1,20 +1,16 @@
 import sys
+
 reload(sys)
 # append python module path for opencv and numpy
 sys.path.append("/usr/lib/python2.7/site-packages")
+import cv2
+import numpy as np
 import argparse
 import time
 
 # import local scripts and SoloCamera for drone video access
-running_locally = False
 from flash import Flash
-try:
-    from SoloCamera import SoloCamera
-except OSError:
-    running_locally = True
-
-import cv2
-import numpy as np
+from SoloCamera import SoloCamera
 
 
 ap = argparse.ArgumentParser()
@@ -45,18 +41,15 @@ kernel = np.ones((5, 5), np.float32) / 25
 # TEST: get pattern from user
 PATTERN = "01010111"
 
-current_milli_time = lambda: int(round(time.time() * 1000))
-timestamp = current_milli_time()
+# TEST: get fps from stream
+timestamp = int(round(time.time() * 1000))
+
 
 # TODO: create a state function for gps, flash detection/recognition, moving towards flash, regaining flash location
 def main():
     global timestamp
     # setup camera based on script run location
-    cap = None
-    if not running_locally:
-        cap = SoloCamera()
-    else:
-        cap = cv2.VideoCapture(args['video'])
+    cap = SoloCamera()
 
     ret, last_frame = cap.read()
 
@@ -68,22 +61,17 @@ def main():
         if frame is None:
             break
 
+        # perform filters to eliminate noise
         filtered = perform_filters(frame)
 
+        # identify and draw flashes
         if len(filtered['ROIS']) > 0:
             identify_flash(filtered['ROIS'])
         draw_flashes(filtered['origFrame'])
 
-        print 1000.0/(timestamp - current_milli_time())
-        timestamp = current_milli_time()
+        print_fps()
 
-        # display frames to window
-        if running_locally:
-            cv2.imshow('BINARY_FILTER', filtered['binaryThresh'])
-            cv2.imshow('ORIGINAL_FRAME', filtered['origFrame'])
-
-    # close window and camera
-    cap.release()
+    cap.stop()
 
 
 def perform_filters(image):
@@ -96,8 +84,6 @@ def perform_filters(image):
 
     # Greyscale and Blurring to eliminate
     mask = image
-    if running_locally:
-        mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
     mask = cv2.GaussianBlur(mask, (int(args["blur"]), int(args["blur"])), 0)
 
     rois = []
@@ -174,6 +160,11 @@ def identify_flash(regions_of_interest):
         if not flash_exists:
             possible_flashes.append(Flash(roi['location']))
 
+
+def print_fps():
+    global timestamp
+    print 1000.0 / (timestamp - int(round(time.time() * 1000)))
+    timestamp = int(round(time.time() * 1000))
 
 if __name__ == '__main__':
     main()
