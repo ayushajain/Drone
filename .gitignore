@@ -1,4 +1,5 @@
 images
-.pyc
-.idea
-.DS_STORE
+*.pyc
+*.idea
+*.DS_STORE
+*.tar.gz
