@@ -43,7 +43,10 @@ PATTERN = "01010111"
 # TODO: create a state function for gps, flash detection/recognition, moving towards flash, regaining flash location
 def main():
     # frame display/saving
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(args['video'])
+
+    ret, frame = cap.read()
+    print frame.tolist()
 
     while True:
         # Capture frame-by-frame
