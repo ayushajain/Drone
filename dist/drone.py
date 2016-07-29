@@ -9,7 +9,7 @@ import argparse
 import time
 
 # import local scripts and SoloCamera for drone video access
-from flash import Flash
+from flashroi import FlashROI
 from SoloCamera import SoloCamera
 
 
@@ -158,7 +158,7 @@ def identify_flash(regions_of_interest):
 
         # define a flash object if one does not already exist
         if not flash_exists:
-            possible_flashes.append(Flash(roi['location']))
+            possible_flashes.append(FlashROI(roi['location']))
 
 
 def print_fps():

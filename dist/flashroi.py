@@ -1,9 +1,8 @@
-from collections import Counter, deque
 import math
 
 
-# A class to define each of the possible goals/flashes
-class Flash:
+class FlashROI:
+    """ Flash class that defines each possible flash object """
 
     current_identity = 0
 
@@ -21,52 +20,59 @@ class Flash:
         # initialize current flash location and identity
         self.x = location[0]
         self.y = location[1]
-        self.identity = Flash.current_identity
+        self.identity = FlashROI.current_identity
         self.last_frame_count = 0
 
         # cache pattern tracking
         self.pattern_cache = 0
-        self.count = 0
+        self.patterns_found = 0
 
         # update Flash class identity
-        Flash.current_identity += 1
+        FlashROI.current_identity += 1
 
         self.pattern_count = {}
 
-    def __str__(self):
-        return str(self.identity) + ": location(" + str(self.x) + ", " + str(self.y) + ") pattern(TEST" + ") rawbitrate" + str(self.raw_bits)
-
     def __repr__(self):
-        return self.__str__()
+        return str(self.identity) + ": location(" + str(self.x) + ", " + str(self.y) + ") rawbitrate" + str(self.raw_bits)
 
-    def push_raw_bits(self, bit, pixelIntensity):
+    def push_raw_bits(self, bit, pixel_intensity):
         if len(self.raw_bits) > 0:
             bits_missed = (self.last_update - self.last_frame_count)/5.0
             last_bit = self.raw_bits[-1]
             for count in range(int(round(bits_missed)) - 1):
-                # self.raw_bits.append(last_bit)
-                self.raw_bits.append(0 if last_bit > pixelIntensity else 1)
+                self.raw_bits.append(0 if last_bit > pixel_intensity else 1)
         self.last_frame_count = self.last_update
-        #self.raw_bits.append(bit)
-        self.raw_bits.append(0 if bit > pixelIntensity else 1)
+        self.raw_bits.append(0 if bit > pixel_intensity else 1)
 
     def distance_to(self, location):
         return math.sqrt((location[0] - self.x) ** 2 + (location[1] - self.y) ** 2)
 
-    def equals_pattern(self, pattern):
+    def equals_pattern(self, pattern, limit):
 
         for x in range(self.pattern_cache, len(self.raw_bits) - 8):
-            print self.raw_bits[x: x + 8]
-            if Flash.cyclic_equivalence(self.raw_bits[x: x + 8], map(int, list(pattern))):
-                self.count += 1
+            if FlashROI.cyclic_equivalence(self.raw_bits[x: x + 8], map(int, list(pattern))):
+                self.patterns_found += 1
 
         self.pattern_cache = len(self.raw_bits) - 8
 
         # TODO: change count limit dynamically
-        return True if self.count > 10 else False
+        return True if self.patterns_found > limit else False
+
+    def update_location(self, location):
+        self.x = location[0]
+        self.y = location[1]
 
     @staticmethod
     def cyclic_equivalence(a, b):
+        """ Algorithm of cyclic equivalence used to determine whether 2 lists are rotated versions of each other
+
+        Args:
+            a:
+            b:
+
+        Returns:
+
+        """
 
         n, i, j = len(a), 0, 0
         if n != len(b):
@@ -82,9 +88,3 @@ class Flash:
             else:
                 j += k
         return False
-
-    def update_location(self, location):
-        self.x = location[0]
-        self.y = location[1]
-
-
