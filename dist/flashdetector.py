@@ -109,7 +109,9 @@ class FlashDetector(object):
         """ Determines whether a contour is a region of interest
 
         We iterate through each region of interest, and compare each roi to all of the FlashROIS we already determined.
-        If the roi's meanshift distance to the FlashROI is fairly small TODO
+        If the roi's meanshift distance to the FlashROI is fairly small then we can assume that the roi is the same as
+        the FlashROI. We then push the roi's image intensity value to the corresponding FlashROI. If a roi does not
+        correspond to an existing FlashROI, we create a new FlashROI object for it.
 
         Args:
             regions_of_interest: the contours found in the last frame processed
@@ -152,9 +154,6 @@ class FlashDetector(object):
 
         """
 
-        # resize frame to reduce processing times
-        image = cv2.resize(image, (0, 0), fx=float(self.params["scale"]), fy=float(self.params["scale"]))
-
         filtered, gray = self.filter(image, self.last_frame)
         contours = FlashDetector.identify_contours(filtered, gray)
         self.validate_rois(contours)
@@ -166,14 +165,14 @@ class FlashDetector(object):
         self.frame_count += 1
 
         # identify correct flash
+        flash_identified = None
         for flash in self.flash_rois:
-
             # draw each flashes identifying number
             cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
             if flash.equals_pattern(self.searching_pattern, 1):  # TODO: count each time the pattern occurs
 
                 # draw a box around the correct flash
                 cv2.rectangle(image, (flash.x - 15, flash.y - 15), (flash.x + 15, flash.y + 15), (0, 255, 0), 2)
-                return flash, image
+                flash_identified = flash
 
-        return None, image
+        return flash_identified, image
