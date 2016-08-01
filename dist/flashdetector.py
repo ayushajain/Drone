@@ -57,17 +57,16 @@ class FlashDetector(object):
             tuple: returns `absolute difference frame` and `grayscaled frame` respectively
 
         """
-
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         mask = cv2.GaussianBlur(gray, (int(self.params["blur"]), int(self.params["blur"])), 0) # TODO: blur based on altitude
-        diff = cv2.absdiff(mask, mask if image_comparison is None else image_comparison)
+        diff = cv2.absdiff(mask, mask if image_comparison is None  or image_comparison.shape != mask.shape else image_comparison)
         (t, diff) = cv2.threshold(diff, float(self.params["threshold"]), 255, cv2.THRESH_BINARY)
         self.last_frame = mask
 
         return diff, gray
 
     @staticmethod
-    def identify_contours(filtered, image_intensity):
+    def identify_contours(filtered, image_intensity, offset=(0, 0)):
         """ Finds all the contours in a thresholded frame
 
         This method will find all the contours in a thresholded frame. It will also calculate each of the contours
@@ -98,7 +97,7 @@ class FlashDetector(object):
                 # calculate center of contour
                 center_x = int((moments["m10"] / moments["m00"]))
                 center_y = int((moments["m01"] / moments["m00"]))
-                contours.append({"location": (center_x, center_y), "value": image_intensity[center_y][center_x]})
+                contours.append({"location": (center_x + offset[0], center_y + offset[1]), "value": image_intensity[center_y + offset[1]][center_x + offset[0]]})
 
             except ZeroDivisionError:
                 pass
@@ -169,10 +168,39 @@ class FlashDetector(object):
         for flash in self.flash_rois:
             # draw each flashes identifying number
             cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-            if flash.equals_pattern(self.searching_pattern, 1):  # TODO: count each time the pattern occurs
+            if flash.equals_pattern(self.searching_pattern, 5):  # TODO: count each time the pattern occurs
 
-                # draw a box around the correct flash
-                cv2.rectangle(image, (flash.x - 15, flash.y - 15), (flash.x + 15, flash.y + 15), (0, 255, 0), 2)
                 flash_identified = flash
 
         return flash_identified, image
+
+    def track(self, flash, image, size=30):
+        """ tracks the flash in the image
+
+        Args:
+            flash (FlashROI): the flash we identified
+            image (numpy.ndarray): image that needs to be proccessed
+
+        Returns:
+            FlashROI: returns the `FlashROI` if found or `None` if nothing is found
+
+        """
+
+        # todo: verify the pattern as we track it
+
+        filtered, gray = self.filter(image, self.last_frame)
+        offset = max(0, flash.x - size), max(0, flash.y - size)
+
+        # crop matrix to perform fewer contour calculations
+        filtered = filtered[max(0, flash.y - size):max(0, flash.y + size), max(0, flash.x - size): max(0, flash.x + size)]
+
+        contours = FlashDetector.identify_contours(filtered, gray, offset)
+        self.validate_rois(contours)
+
+        # draw contours identified in image
+        for contour in contours:
+            cv2.circle(image, contour["location"], 1, (0, 0, 255), -1)
+
+        self.frame_count += 1
+
+        return None if len(self.flash_rois) < 1 else self.flash_rois[0], image
