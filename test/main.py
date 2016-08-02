@@ -63,11 +63,6 @@ def main():
             if temp_flash is not None:
                 correct_flash = temp_flash
 
-        if correct_flash is not None:
-            # draw a box around the correct flash
-            box_size = 20
-            cv2.rectangle(frame, (correct_flash.x - box_size, correct_flash.y - box_size), (correct_flash.x + box_size, correct_flash.y + box_size), (0, 255, 0), 1)
-
         # display image
         cv2.imshow("FRAME", frame)
 
