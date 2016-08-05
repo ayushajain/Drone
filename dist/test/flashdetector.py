@@ -59,7 +59,7 @@ class FlashDetector(object):
 
         """
 
-        gray = image
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         mask = cv2.GaussianBlur(gray, (int(self.params["blur"]), int(self.params["blur"])), 0) # TODO: blur based on altitude
         self.last_frame = mask
 
@@ -174,8 +174,8 @@ class FlashDetector(object):
         flash_identified = None
         for flash in self.flash_rois:
             # draw each flashes identifying number
-            cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 255, 2)
-            if flash.equals_pattern(self.searching_pattern, 5):  # TODO: count each time the pattern occurs
+            cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            if flash.equals_pattern(self.searching_pattern, 2):  # TODO: count each time the pattern occurs
 
                 flash_identified = flash
 
@@ -193,18 +193,22 @@ class FlashDetector(object):
 
         """
 
+        # TODO: verify the pattern as we track it
+
         filtered, gray = self.filter(image, self.last_frame)
         offset = max(0, flash.x - size), max(0, flash.y - size)
-        filtered = filtered[max(0, flash.y - size):max(0, flash.y + size), max(0, flash.x - size): max(0, flash.x + size)]  # crop matrix to perform fewer contour calculations
+
+        # crop matrix to perform fewer contour calculations
+        filtered = filtered[max(0, flash.y - size):max(0, flash.y + size), max(0, flash.x - size): max(0, flash.x + size)]
+
         contours = FlashDetector.identify_contours(filtered, gray, offset)
         self.validate_rois(contours)
 
         # draw contours identified in image and draw box around the area we are tracking
         for contour in contours:
-            cv2.circle(image, contour["location"], 1, 255, -1)
-        cv2.rectangle(image, offset, (offset[0] + size*2, offset[1] + size*2), 255, 1)
+            cv2.circle(image, contour["location"], 1, (0, 0, 255), -1)
+        cv2.rectangle(image, (offset), (offset[0] + size*2, offset[1] + size*2), (250, 100, 100), 1)
 
         self.frame_count += 1
 
-        # TODO: verify the pattern as we track it
         return None if len(self.flash_rois) < 1 else self.flash_rois[0], image

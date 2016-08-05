@@ -17,7 +17,7 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity {
 
     //rate of each bit in milliseconds
-    private final int TIC_RATE = 100;
+    private final int TIC_RATE = 200;
 
     //list containing all the fields
     ArrayList<EditText> fields = new ArrayList<EditText>();

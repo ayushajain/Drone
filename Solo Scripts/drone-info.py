@@ -1,5 +1,9 @@
-from dronekit import connect
 import sys
+reload(sys)
+sys.path.append("/usr/lib/python2.7/site-packages")
+
+from dronekit import connect
+
 
 # Connect to UDP endpoint (and wait for default attributes to accumulate)
 target = sys.argv[1] if len(sys.argv) >= 2 else 'udpin:0.0.0.0:14550'
