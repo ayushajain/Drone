@@ -2,10 +2,7 @@ import sys
 reload(sys)
 sys.path.append("/usr/lib/python2.7/site-packages")  # append python module path for opencv and numpy
 
-import cv2
-import argparse
-import time as pytime
-import math
+import cv2, argparse, time as pytime, math
 from flask import Flask, render_template, Response
 from flashdetector import FlashDetector
 from SoloCamera import SoloCamera

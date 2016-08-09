@@ -23,5 +23,5 @@ Visual Targetting System
 `ffplay -protocol_whitelist file,udp,rtp sololink.sdp`  
 > Use this to stream live video from the solo
 
-`ffmpeg -protocol_whitelist file,udp,rtp -i sololink.sdp -codec copy -f mpegts output.mp4`
-> Writes stream to file `output.mp4`
+`ffmpeg -protocol_whitelist file,udp,rtp -i sololink.sdp -y  -f image2 -updatefirst 1 img.bmp`
+> Writes stream to file `img.bmp`

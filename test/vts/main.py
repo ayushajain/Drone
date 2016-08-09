@@ -5,7 +5,7 @@ from flashdetector import FlashDetector
 
 # generate arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--video", required=False, default="../../CV Scripts/images/drone-updown-recog.mp4", help="Path to the video to be processed")
+ap.add_argument("-i", "--video", required=False, default="../images/drone-updown-recog.mp4", help="Path to the video to be processed")
 ap.add_argument("-t", "--threshold", required=False, default=40, help="Threshold limit")
 ap.add_argument("-s", "--scale", required=False, default=0.5, help="Image scale size")
 ap.add_argument("-b", "--blur", required=False, default=1, help="Blur amount")
