@@ -1,16 +1,27 @@
-## Drone Information
+Visual Targetting System
+=======================
+### Project Structure
 
-Use `python flash-detection.py -i images/flashmovement.mov -t 220 -s 0.3 -b 25 -v True` to run flash-detection.py
+    .
+    ├── dist                                 
+    ├── test
+    │   ├── cv-tests
+    │   ├── solo-flight
+    │   ├── stream
+    │   └── vts
+    ├── Drone-Flash Android
+    ├── LICENSE
+    └── README.md
 
-##### 200fps 
-`python flash-recognition.py -i images/200fps.MP4 -t 230 -s 0.5 -b 15 -v True`
-
-### flash-detection.py flags
-`-i` - image/video path relative to current directory  
-`-t` - the binary threshold  
-`-b` - the blur amount  
-`-v` - using video  
-`-s` - scaling  
+> Scripts are specific to the 3DR Solo
 
 
-For the other python files, just use `python filename`.
+### Streaming
+`sololink.sdp` provides the interface for grabbing stream directly from the solo
+> Stream comes from udp://10.1.1.10:5600
+
+`ffplay -protocol_whitelist file,udp,rtp sololink.sdp`  
+> Use this to stream live video from the solo
+
+`ffmpeg -protocol_whitelist file,udp,rtp -i sololink.sdp -codec copy -f mpegts output.mp4`
+> Writes stream to file `output.mp4`

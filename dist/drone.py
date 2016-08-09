@@ -9,19 +9,19 @@ import math
 from flask import Flask, render_template, Response
 from flashdetector import FlashDetector
 from SoloCamera import SoloCamera
-from dronekit import connect
+from dronekit import connect, time, VehicleMode
 
 
 # Connect to UDP endpoint (and wait for default attributes to accumulate)
 target = sys.argv[1] if len(sys.argv) >= 2 else 'udpin:0.0.0.0:14550'
 print 'Connecting to ' + target + '...'
-vehicle = connect(target, wait_ready=True)
+vehicle = connect(target, wait_ready=False)
 
 # parse arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--video", required=False, default="../CV Scripts/images/drone-updown-recog.mp4", help="Path to the video to be processed")
 ap.add_argument("-t", "--threshold", required=False, default=40, help="Threshold limit")
-ap.add_argument("-s", "--scale", required=False, default=0.4, help="Image scale size")
+ap.add_argument("-s", "--scale", required=False, default=0.6, help="Image scale size")
 ap.add_argument("-b", "--blur", required=False, default=3, help="Blur amount")
 ap.add_argument("-r", "--rotate", required=False, default=0, help="Image rotation amount")
 args = vars(ap.parse_args())
@@ -29,9 +29,6 @@ args = vars(ap.parse_args())
 
 PATTERN = "01010111"
 timestamp = int(round(pytime.time() * 1000))
-
-cached_frames = []
-
 
 # Flask streaming
 app = Flask(__name__)
@@ -143,11 +140,44 @@ def show_stats(frame, flash, rad, dimensions=None):
 
 def rotate_point(point, rad):
     x, y = point
-
     return int(round(y * math.sin(rad) + x * math.cos(rad))), -int(round(y * math.cos(rad) - x * math.sin(rad)))
 
+
+def arm_and_takeoff(aTargetAltitude):
+    """
+    Arms vehicle and fly to aTargetAltitude.
+    """
+    print "Basic pre-arm checks"
+    # Don't try to arm until autopilot is ready
+    while not vehicle.is_armable:
+        print " Waiting for vehicle to initialise..."
+        time.sleep(1)
+
+    print "Arming motors"
+    # Copter should arm in GUIDED mode
+    vehicle.mode    = VehicleMode("GUIDED")
+    vehicle.armed   = True
+
+    # Confirm vehicle armed before attempting to take off
+    while not vehicle.armed:
+        print " Waiting for arming..."
+        time.sleep(1)
+
+    print "Taking off!"
+    vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude NOTE: asynchronous method
+
+    # Wait until the vehicle reaches a safe height before processing the goto (otherwise the command
+    #  after Vehicle.simple_takeoff will execute immediately).
+    while True:
+        print " Altitude: ", vehicle.location.global_relative_frame.alt
+        #Break and return from function just below target altitude.
+        if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95:
+            print "Reached target altitude"
+            break
+        time.sleep(1)
 
 if __name__ == '__main__':
     #cam = SoloCamera()
     #main(cam)
+    arm_and_takeoff(10)
     app.run(host='0.0.0.0', debug=True)

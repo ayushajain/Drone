@@ -14,11 +14,11 @@ args = vars(ap.parse_args())
 
 PATTERN = "01010111"
 
-# TODO SHOW NICK: http://www.inc.com/jeff-bercovici/peter-thiel-young-blood.html
 
 def main():
     # start camera
     cap = cv2.VideoCapture(args['video'])
+
     ret, frame = cap.read()
 
     state = 0
@@ -43,8 +43,8 @@ def main():
             break
 
         frame = cv2.resize(frame, (0, 0), fx=float(args["scale"]), fy=float(args["scale"]))
-
-        compass = math.radians(40) # TODO: get compass direction from drone
+        frame_height, frame_width, frame_shape = frame.shape
+        compass = math.radians(40)  # TODO: get compass direction from drone
 
         if state == 0:
             flash, frame = flash_detector.identify_flash(frame)
@@ -58,11 +58,10 @@ def main():
             temp_flash, frame = flash_detector.track(correct_flash, frame)
             show_stats(frame, temp_flash, compass)
 
-            altitude = 15  # TODO: get altitude from drone
-
-            east_error, north_error = calculate_error(correct_flash, compass, altitude, frame.shape)
-            print east_error, north_error
-
+            angle = math.degrees(math.atan2(0, -1) - math.atan2(correct_flash.x - frame_width/2, correct_flash.y - frame_height/2))
+            if angle < 0:
+                angle += 360
+            print angle
 
             if temp_flash is not None:
                 correct_flash = temp_flash

@@ -132,7 +132,7 @@ class FlashDetector(object):
             for fr in self.flash_rois:
 
                 # mean-shift calculation here
-                if fr.distance_to(roi['location']) < 10: # TODO: change distance to pixel based on drone altitude and implement object tracking
+                if fr.distance_to(roi['location']) < 25: # TODO: change distance to pixel based on drone altitude and implement object tracking
                     flash_exists = True
 
                     # push bit to flash and update location
@@ -173,7 +173,6 @@ class FlashDetector(object):
         # identify correct flash
         flash_identified = None
         for flash in self.flash_rois:
-            print flash
             # draw each flashes identifying number
             cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 255, 2)
 
