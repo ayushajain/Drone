@@ -7,19 +7,26 @@ from flashdetector import FlashDetector
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--video", required=False, default="../images/drone-updown-recog.mp4", help="Path to the video to be processed")
 ap.add_argument("-t", "--threshold", required=False, default=40, help="Threshold limit")
-ap.add_argument("-s", "--scale", required=False, default=0.5, help="Image scale size")
+ap.add_argument("-s", "--scale", required=False, default=0.8, help="Image scale size")
 ap.add_argument("-b", "--blur", required=False, default=1, help="Blur amount")
 ap.add_argument("-r", "--rotate", required=False, default=0, help="Image rotation amount")
 args = vars(ap.parse_args())
 
 PATTERN = "01010111"
+stream_location = "../stream/stream.bmp"
+wait_time = 190
+live = True
 
 
 def main():
-    # start camera
-    cap = cv2.VideoCapture(args['video'])
+    frame, cap = None, None
 
-    ret, frame = cap.read()
+    # start camera
+    if live:
+        frame = cv2.imread(stream_location)
+    else:
+        cap = cv2.VideoCapture(args['video'])
+        ret, frame = cap.read()
 
     state = 0
     """ Managing state for detecting and tracking location
@@ -36,40 +43,46 @@ def main():
     while True:
 
         # Capture frame-by-frame
-        ret, frame = cap.read()
+        if live:
+            frame = cv2.imread(stream_location)
+        else:
+            ret, frame = cap.read()
 
         # quit video on keypress(q) or when videocapture ends
-        if frame is None or cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(wait_time) & 0xFF == ord('q'):
             break
 
-        frame = cv2.resize(frame, (0, 0), fx=float(args["scale"]), fy=float(args["scale"]))
-        frame_height, frame_width, frame_shape = frame.shape
-        compass = math.radians(40)  # TODO: get compass direction from drone
+        if frame is not None:
 
-        if state == 0:
-            flash, frame = flash_detector.identify_flash(frame)
-            show_stats(frame, flash, compass)
+            frame = cv2.resize(frame, (0, 0), fx=float(args["scale"]), fy=float(args["scale"]))
+            frame_height, frame_width, frame_shape = frame.shape
+            compass = math.radians(40)  # TODO: get compass direction from drone
 
-            if flash is not None:
-                state = 1
-                correct_flash = flash
-                del flash_detector.flash_rois[:]
-        elif state == 1:
-            temp_flash, frame = flash_detector.track(correct_flash, frame)
-            show_stats(frame, temp_flash, compass)
+            if state == 0:
+                flash, frame = flash_detector.identify_flash(frame)
+                show_stats(frame, flash, compass)
 
-            angle = math.degrees(math.atan2(0, -1) - math.atan2(correct_flash.x - frame_width/2, correct_flash.y - frame_height/2))
-            if angle < 0:
-                angle += 360
-            print angle
+                if flash is not None:
+                    state = 1
+                    correct_flash = flash
+                    del flash_detector.flash_rois[:]
+            elif state == 1:
+                temp_flash, frame = flash_detector.track(correct_flash, frame)
+                show_stats(frame, temp_flash, compass)
 
-            if temp_flash is not None:
-                correct_flash = temp_flash
+                angle = math.degrees(math.atan2(0, -1) - math.atan2(correct_flash.x - frame_width/2, correct_flash.y - frame_height/2))
+                if angle < 0:
+                    angle += 360
+                print angle
 
-        # display image
-        cv2.imshow("FRAME", frame)
+                if temp_flash is not None:
+                    correct_flash = temp_flash
 
-    cap.release()
+            # display image
+            cv2.imshow("FRAME", frame)
+
+    if not live:
+        cap.release()
     cv2.destroyAllWindows()
 
 

@@ -6,7 +6,8 @@ args = vars(ap.parse_args())
 
 while True:
 
-    img = cv2.imread("img.bmp")
+    img = cv2.imread("stream.bmp")
+
     if img is not None:
         cv2.imshow("test", img)
 

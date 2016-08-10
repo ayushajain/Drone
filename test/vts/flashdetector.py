@@ -173,9 +173,10 @@ class FlashDetector(object):
         # identify correct flash
         flash_identified = None
         for flash in self.flash_rois:
+            print flash
             # draw each flashes identifying number
             cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-            if flash.equals_pattern(self.searching_pattern, 2):  # TODO: count each time the pattern occurs
+            if flash.equals_pattern(self.searching_pattern, 1):  # TODO: count each time the pattern occurs
 
                 flash_identified = flash
 
