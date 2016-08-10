@@ -17,6 +17,7 @@ Visual Targetting System
 
 
 ### Streaming
+Connect to the solo's controller by running: `nc 10.1.1.1 5502`  
 `sololink.sdp` provides the interface for grabbing stream directly from the solo
 > Stream comes from udp://10.1.1.10:5600
 
