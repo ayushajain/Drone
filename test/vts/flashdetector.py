@@ -132,20 +132,20 @@ class FlashDetector(object):
             for fr in self.flash_rois:
 
                 # mean-shift calculation here
-                if fr.distance_to(roi['location']) < 30: # TODO: change distance to pixel based on drone altitude and implement object tracking
+                if fr.distance_to(roi['location']) < 50: # TODO: change distance to pixel based on drone altitude and implement object tracking
                     flash_exists = True
 
                     # push bit to flash and update location
                     if fr.last_update != self.frame_count:
                         fr.last_update = self.frame_count
-                        fr.push_raw_bits(roi['value'], 80)  # TODO: dynamically change pixel intensity value based on ambience
+                        fr.push_raw_bits(roi['value'], 200, 1)  # TODO: dynamically change pixel intensity value based on ambience
                         fr.update_location(roi['location'])
 
             # define a flash object if one does not already exist
             if not flash_exists:
                 self.flash_rois.append(FlashROI(roi['location']))
 
-    def identify_flash(self, image):
+    def identify_flash(self, image, debug=False):
         """ Finds the coordinates of the flash with the correct pattern
 
         In order to find the flash, first we filter out the noise. Then we identify all the contours in the resulting
@@ -154,6 +154,7 @@ class FlashDetector(object):
 
         Args:
             image (numpy.ndarray): the frame in which we need to identify the flash
+            debug (boolean): debugging
 
         Returns:
             FlashROI: returns the `FlashROI` if found or `None` if nothing is found
@@ -172,12 +173,13 @@ class FlashDetector(object):
 
         # identify correct flash
         flash_identified = None
+
         for flash in self.flash_rois:
-            print flash
+            if debug:
+                print flash
             # draw each flashes identifying number
             cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-            if flash.equals_pattern(self.searching_pattern, 1):  # TODO: count each time the pattern occurs
-
+            if flash.equals_pattern(self.searching_pattern, 5):
                 flash_identified = flash
 
         return flash_identified, image
@@ -188,6 +190,7 @@ class FlashDetector(object):
         Args:
             flash (FlashROI): the flash we identified
             image (numpy.ndarray): image that needs to be proccessed
+            size (int): size of the box where we search for the flash
 
         Returns:
             FlashROI: returns the `FlashROI` if found or `None` if nothing is found

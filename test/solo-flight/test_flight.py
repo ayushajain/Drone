@@ -108,8 +108,8 @@ def condition_yaw(heading, relative=False):
 arm_and_takeoff(10)
 vehicle.airspeed = 3
 
-point1 = LocationGlobalRelative(-35.361354, 149.165218, vehicle.location.alt) # change the gps coordinates
-vehicle.simple_goto(point1)
+#point1 = LocationGlobalRelative(-35.361354, 149.165218, vehicle.location.alt) # change the gps coordinates
+#vehicle.simple_goto(point1)
 
 
 

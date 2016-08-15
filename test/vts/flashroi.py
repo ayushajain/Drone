@@ -35,13 +35,15 @@ class FlashROI:
     def __repr__(self):
         return str(self.identity) + ": location(" + str(self.x) + ", " + str(self.y) + ") rawbitrate" + str(self.raw_bits)
 
-    def push_raw_bits(self, bit, pixel_intensity):
+    def push_raw_bits(self, bit, pixel_intensity, compensation_per_missed):
         if len(self.raw_bits) > 0:
-            bits_missed = (self.last_update - self.last_frame_count)/5.0
+            bits_missed = (self.last_update - self.last_frame_count) / float(compensation_per_missed)
             last_bit = self.raw_bits[-1]
             for count in range(int(round(bits_missed)) - 1):
+                # self.raw_bits.append(last_bit)
                 self.raw_bits.append(0 if last_bit > pixel_intensity else 1)
         self.last_frame_count = self.last_update
+        # self.raw_bits.append(bit)
         self.raw_bits.append(0 if bit > pixel_intensity else 1)
 
     def distance_to(self, location):
@@ -67,10 +69,11 @@ class FlashROI:
         """ Algorithm of cyclic equivalence used to determine whether 2 lists are rotated versions of each other
 
         Args:
-            a:
-            b:
+            a: first list
+            b: second list
 
         Returns:
+            True if a is cyclically equivalent to b
 
         """
 
