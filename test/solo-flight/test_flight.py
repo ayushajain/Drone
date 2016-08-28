@@ -1,19 +1,29 @@
-import sys
+import sys, math
+import dronekit_sitl
+from dronekit import connect, VehicleMode, time, LocationGlobalRelative, mavutil
+
 
 # append python module path for opencv and numpy
 sys.path.append("/usr/lib/python2.7/site-packages")
 
-from dronekit import connect, VehicleMode, time, LocationGlobalRelative, mavutil
+sitl = dronekit_sitl.start_default()
+connection_string = sitl.connection_string()
 
 # Connect to UDP endpoint (and wait for default attributes to accumulate)
-target = sys.argv[1] if len(sys.argv) >= 2 else 'udpin:0.0.0.0:14550'
-print 'Connecting to ' + target + '...'
-vehicle = connect(target, wait_ready=True)
-
+vehicle = connect(connection_string, wait_ready=True)
 takeoff_location = vehicle.location.global_frame
 print "GPS Coordinates (lat/lon): " + str(takeoff_location.lat) + ", " + str(takeoff_location.lon)
 print "Battery: " + str(vehicle.battery)
 
+# Camera resolution
+horizontal_resolution = 1280
+vertical_resolution = 720
+
+# Camera FOV (radians) - References:
+# https://gopro.com/support/articles/hero3-field-of-view-fov-information
+# https://gopro.com/support/articles/video-resolution-settings-and-format
+horizontal_fov = math.radians(118.2)
+vertical_fov = math.radians(69.5)
 
 def arm_and_takeoff(aTargetAltitude):
     """
@@ -103,13 +113,43 @@ def condition_yaw(heading, relative=False):
     vehicle.send_mavlink(msg)
 
 
+def send_land_message(x, y):
+    """ lands the drone at target
+
+    References: http://mavlink.org/messages/common#LANDING_TARGET
+
+    Args:
+        x:
+        y:
+
+    Returns:
+
+    """
+    print "Landing!!"
+    msg = vehicle.message_factory.landing_target_encode(
+        0,       # time_boot_ms (not used)
+        0,       # target num
+        0,       # frame
+        (x - horizontal_resolution / 2) * horizontal_fov / horizontal_resolution,
+        (y - vertical_resolution / 2) * vertical_fov / vertical_resolution,
+        0,       # altitude.  Not supported.
+        0,0)     # size of target in radians
+    vehicle.send_mavlink(msg)
+    #vehicle.flush()
 
 
 arm_and_takeoff(10)
 vehicle.airspeed = 3
 
-#point1 = LocationGlobalRelative(-35.361354, 149.165218, vehicle.location.alt) # change the gps coordinates
-#vehicle.simple_goto(point1)
+point1 = LocationGlobalRelative(-35.361354, 149.165218, float(vehicle.location.global_frame.alt)) # change the gps coordinates
+vehicle.simple_goto(point1)
+
+
+send_land_message(0, 0)
+print vehicle.location.global_frame.alt
+
+time.sleep(30)
+print vehicle.location.global_frame.alt
 
 
 
@@ -123,3 +163,63 @@ print "Close vehicle object"
 vehicle.close()
 
 print("Completed")
+
+
+# test script shit
+def send_land_message(x, y):
+    """ lands the drone at target
+
+    References: http://mavlink.org/messages/common#LANDING_TARGET
+
+    Args:
+        x:
+        y:
+
+    Returns:
+
+    """
+    print "Landing!!"
+    msg = vehicle.message_factory.landing_target_encode(
+        0,       # time_boot_ms (not used)
+        0,       # target num
+        0,       # frame
+        (x - horizontal_resolution / 2) * horizontal_fov / horizontal_resolution,
+        (y - vertical_resolution / 2) * vertical_fov / vertical_resolution,
+        0,       # altitude.  Not supported.
+        0,0)     # size of target in radians
+    vehicle.send_mavlink(msg)
+    vehicle.flush()
+
+
+def arm_and_takeoff(aTargetAltitude):
+    """
+    Arms vehicle and fly to aTargetAltitude.
+    """
+    print "Basic pre-arm checks"
+    # Don't try to arm until autopilot is ready
+    while not vehicle.is_armable:
+        print " Waiting for vehicle to initialise..."
+        time.sleep(1)
+
+    print "Arming motors"
+    # Copter should arm in GUIDED mode
+    vehicle.mode = VehicleMode("GUIDED")
+    vehicle.armed = True
+
+    # Confirm vehicle armed before attempting to take off
+    while not vehicle.armed:
+        print " Waiting for arming..."
+        time.sleep(1)
+
+    print "Taking off!"
+    vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude NOTE: asynchronous method
+
+    # Wait until the vehicle reaches a safe height before processing the goto (otherwise the command
+    #  after Vehicle.simple_takeoff will execute immediately).
+    while True:
+        print " Altitude: ", vehicle.location.global_relative_frame.alt
+        #Break and return from function just below target altitude.
+        if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95:
+            print "Reached target altitude"
+            break
+        time.sleep(1)

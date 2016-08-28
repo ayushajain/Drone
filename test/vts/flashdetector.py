@@ -116,7 +116,7 @@ class FlashDetector(object):
 
         We iterate through each region of interest, and compare each roi to all of the FlashROIS we already determined.
         If the roi's meanshift distance to the FlashROI is fairly small then we can assume that the roi is the same as
-        the FlashROI. We then push the roi's image intensity value to the corresponding FlashROI. If a roi does not
+        the FlashROI. We then push the roi's image intensity value to the corresponding FlashROIs. If a roi does not
         correspond to an existing FlashROI, we create a new FlashROI object for it.
 
         Args:

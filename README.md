@@ -26,3 +26,6 @@ Connect to the solo's controller by running: `nc 10.1.1.1 5502`
 
 `ffmpeg -protocol_whitelist file,udp,rtp -i sololink.sdp -y  -f image2 -updatefirst 1 img.bmp`
 > Writes stream to file `img.bmp`
+
+
+`ffmpeg -protocol_whitelist file,udp,rtp -i sololink.sdp -f image2 -updatefirst 1 -pix_fmt rgb24 -vcodec rawvideo -`
