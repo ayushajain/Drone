@@ -116,7 +116,7 @@ class FlashDetector(object):
 
         We iterate through each region of interest, and compare each roi to all of the FlashROIS we already determined.
         If the roi's meanshift distance to the FlashROI is fairly small then we can assume that the roi is the same as
-        the FlashROI. We then push the roi's image intensity value to the corresponding FlashROI. If a roi does not
+        the FlashROI. We then push the roi's image intensity value to the corresponding FlashROIs. If a roi does not
         correspond to an existing FlashROI, we create a new FlashROI object for it.
 
         Args:
@@ -132,20 +132,20 @@ class FlashDetector(object):
             for fr in self.flash_rois:
 
                 # mean-shift calculation here
-                if fr.distance_to(roi['location']) < 25: # TODO: change distance to pixel based on drone altitude and implement object tracking
+                if fr.distance_to(roi['location']) < 50: # TODO: change distance to pixel based on drone altitude and implement object tracking
                     flash_exists = True
 
                     # push bit to flash and update location
                     if fr.last_update != self.frame_count:
                         fr.last_update = self.frame_count
-                        fr.push_raw_bits(roi['value'], 100, 1)  # NOTE TODO: dynamically change pixel intensity value based on ambience, and compensation based on framerate
+                        fr.push_raw_bits(roi['value'], 80, 1)  # TODO: dynamically change pixel intensity value based on ambience
                         fr.update_location(roi['location'])
 
             # define a flash object if one does not already exist
             if not flash_exists:
                 self.flash_rois.append(FlashROI(roi['location']))
 
-    def identify_flash(self, image):
+    def identify_flash(self, image, debug=False):
         """ Finds the coordinates of the flash with the correct pattern
 
         In order to find the flash, first we filter out the noise. Then we identify all the contours in the resulting
@@ -154,6 +154,7 @@ class FlashDetector(object):
 
         Args:
             image (numpy.ndarray): the frame in which we need to identify the flash
+            debug (boolean): debugging
 
         Returns:
             FlashROI: returns the `FlashROI` if found or `None` if nothing is found
@@ -172,14 +173,21 @@ class FlashDetector(object):
 
         # identify correct flash
         flash_identified = None
-        for flash in self.flash_rois:
-            # draw each flashes identifying number
-            cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 255, 2)
 
-            if flash.equals_pattern(self.searching_pattern, 5):  # TODO: count each time the pattern occurs
+        for flash in self.flash_rois:
+            if debug:
+                print flash
+            # draw each flashes identifying number
+            cv2.putText(image, str(flash.identity), (flash.x, flash.y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            if flash.equals_pattern(self.searching_pattern, 5):
                 flash_identified = flash
 
         return flash_identified, image
+
+    def correct(self, val):
+        for flash in self.flash_rois:
+            if flash.identity == val:
+                return flash
 
     def track(self, flash, image, size=30):
         """ tracks the flash in the image
@@ -187,24 +195,29 @@ class FlashDetector(object):
         Args:
             flash (FlashROI): the flash we identified
             image (numpy.ndarray): image that needs to be proccessed
+            size (int): size of the box where we search for the flash
 
         Returns:
             FlashROI: returns the `FlashROI` if found or `None` if nothing is found
 
         """
 
+        # TODO: verify the pattern as we track it
+
         filtered, gray = self.filter(image, self.last_frame)
         offset = max(0, flash.x - size), max(0, flash.y - size)
-        filtered = filtered[max(0, flash.y - size):max(0, flash.y + size), max(0, flash.x - size): max(0, flash.x + size)]  # crop matrix to perform fewer contour calculations
+
+        # crop matrix to perform fewer contour calculations
+        filtered = filtered[max(0, flash.y - size):max(0, flash.y + size), max(0, flash.x - size): max(0, flash.x + size)]
+
         contours = FlashDetector.identify_contours(filtered, gray, offset)
         self.validate_rois(contours)
 
         # draw contours identified in image and draw box around the area we are tracking
         for contour in contours:
-            cv2.circle(image, contour["location"], 1, 255, -1)
-        cv2.rectangle(image, offset, (offset[0] + size*2, offset[1] + size*2), 255, 1)
+            cv2.circle(image, contour["location"], 1, (0, 0, 255), -1)
+        cv2.rectangle(image, (offset), (offset[0] + size*2, offset[1] + size*2), (250, 100, 100), 1)
 
         self.frame_count += 1
 
-        # TODO: verify the pattern as we track it
         return None if len(self.flash_rois) < 1 else self.flash_rois[0], image

@@ -37,7 +37,7 @@ class FlashROI:
 
     def push_raw_bits(self, bit, pixel_intensity, compensation_per_missed):
         if len(self.raw_bits) > 0:
-            bits_missed = (self.last_update - self.last_frame_count)/float(compensation_per_missed)
+            bits_missed = (self.last_update - self.last_frame_count) / float(compensation_per_missed)
             last_bit = self.raw_bits[-1]
             for count in range(int(round(bits_missed)) - 1):
                 #self.raw_bits.append(last_bit)
@@ -69,11 +69,11 @@ class FlashROI:
         """ Algorithm of cyclic equivalence used to determine whether 2 lists are rotated versions of each other
 
         Args:
-            a:
-            b:
+            a: first list
+            b: second list
 
         Returns:
-            bool: True if a and b are rotated versions else False
+            True if a is cyclically equivalent to b
 
         """
 

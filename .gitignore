@@ -1,4 +1,6 @@
 images
+raw
+Demo Videos
 *.pyc
 *.idea
 *.DS_STORE
